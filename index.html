@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Globe Haul Throttle Tool</title>
+<meta name="description" content="A browser-based tool that uses Web Bluetooth to enable or disable the optional throttle on the Specialized Globe Haul ST / LT e-bike">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='8' fill='rgb(236,159,23)'/></svg>">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f5f5f7;
+  --card-bg: #fff;
+  --text: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --border: #d2d2d7;
+  --accent: #0071e3;
+  --accent-hover: #0077ed;
+  --danger: #ff3b30;
+  --danger-hover: #ff453a;
+  --success: #34c759;
+  --success-bg: #f0faf3;
+  --error-bg: #fff5f5;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1c1e;
+    --card-bg: #2c2c2e;
+    --text: #f5f5f7;
+    --text-secondary: #98989d;
+    --border: #48484a;
+    --accent: #0a84ff;
+    --accent-hover: #409cff;
+    --danger: #ff453a;
+    --danger-hover: #ff6961;
+    --success: #30d158;
+    --success-bg: #1a2e1f;
+    --error-bg: #2e1a1a;
+    --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  }
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.github-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.github-link:hover { color: var(--text); }
+
+.github-link svg {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+  vertical-align: -0.2em;
+}
+
+.status {
+  text-align: center;
+  padding: 1rem;
+  border-radius: 10px;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.status.success { background: var(--success-bg); color: var(--success); }
+.status.error { background: var(--error-bg); color: var(--danger); }
+
+.status .spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+  margin-right: 6px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+button {
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+.btn-success {
+  background: var(--success);
+  color: #fff;
+}
+.btn-success:hover:not(:disabled) { filter: brightness(1.1); }
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover:not(:disabled) { background: var(--bg); }
+
+
+details.instructions {
+  margin-bottom: 1.5rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+details.instructions summary {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  list-style: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+details.instructions summary:hover { background: var(--bg); }
+
+details.instructions summary::-webkit-details-marker { display: none; }
+
+details.instructions[open] summary {
+  margin-bottom: 1.5rem;
+}
+
+details.instructions h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+details.instructions h3:first-of-type {
+  margin-top: 0.5rem;
+}
+
+details.instructions p,
+details.instructions ol {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-top: 0.5rem;
+}
+
+details.instructions ol {
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+details.instructions ul {
+  padding-left: 1.25rem;
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+details.instructions a {
+  color: var(--accent);
+}
+
+.copyright {
+  margin-top: 2rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.copyright a {
+  color: var(--text-secondary);
+}
+
+</style>
+</head>
+<body>
+
+<div class="card">
+  <header>
+    <h1>GlobeThrottle</h1>
+  </header>
+
+  <details class="instructions">
+    <summary>About</summary>
+
+    <h3>Disclaimer</h3>
+    <p>This is an unofficial, community developed tool. No affiliation with Specialized. Use at your own risk</p>
+
+    <h3>What is this?</h3>
+    <p>This is a browser-based tool that uses <a href="https://webbluetoothcg.github.io/web-bluetooth/" target="_blank" rel="noopener">Web Bluetooth</a> to connect to the Specialized <a href="https://www.specialized.com/us/en/shop/bikes/electric-bikes/electric-hybrid-bikes/cargo-bikes/globe/globe-haul" target="_blank" rel="noopener">Globe Haul</a> ST / LT e-bike in order to enable or disable the optional <a href="https://www.specialized.com/us/en/globe-throttle/p/220823" target="_blank" rel="noopener">throttle</a></p>
+
+    <h3>What do I need?</h3>
+    <ol>
+      <li>A Globe Haul ST or LT bike</li>
+      <li>A desktop or mobile browser that supports <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API#browser_compatibility" target="_blank" rel="noopener">Web Bluetooth</a> (<a href="https://apps.apple.com/app/bluefy-web-ble-browser/id1492822055" target="_blank" rel="noopener">Bluefy</a> on iOS)</li>
+    </ol>
+
+    <h3>How do I use it?</h3>
+    <ol>
+      <li>Power on your Globe Haul</li>
+      <li>Push <strong>Connect to Globe Haul</strong></li>
+      <li>Select your bike from the list
+        <ul>
+          <li>EH02_42747 or similar</li>
+        </ul>
+      </li>
+      <li>Push
+        <ul>
+          <li><strong>Enable Throttle</strong></li>
+          <li><strong>Disable Throttle</strong></li>
+        </ul>
+      </li>
+      <li>You can now
+        <ul>
+          <li>Click Disconnect</li>
+          <li>Power off the bike</li>
+          <li>Close the browser</li>
+        </ul>
+      </li>
+    </ol>
+
+    <h3>Privacy</h3>
+    <p>This tool runs entirely in your browser and respects your privacy. No data is collected, stored, or sent anywhere. There are no cookies, analytics, or tracking of any kind</p>
+
+    <h3>I'm having issues</h3>
+    <p>Please file a <a href="https://github.com/ngregorich/globethrottle/issues" target="_blank" rel="noopener">GitHub issue</a></p>
+
+  </details>
+
+  <div class="status" id="status">Ready to connect</div>
+
+  <div class="actions" id="actions">
+    <button class="btn-primary" id="btnConnect" onclick="connect()">Connect to Globe Haul</button>
+    <button class="btn-success" id="btnEnable" onclick="setThrottle(true)" disabled>Enable Throttle</button>
+    <button class="btn-danger" id="btnDisable" onclick="setThrottle(false)" disabled>Disable Throttle</button>
+    <button class="btn-outline" id="btnDisconnect" onclick="disconnect()" disabled>Disconnect</button>
+  </div>
+</div>
+
+<p class="copyright">&copy; 2026 Nick Gregorich &middot; <a class="github-link" href="https://github.com/ngregorich/globethrottle" target="_blank" rel="noopener" aria-label="GitHub"><svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a></p>
+
+<script>
+const SERVICE_UUID        = '00010000-452d-4269-6b65-58706c6f7661';
+const CHAR_COMMAND_UUID   = '00010010-452d-4269-6b65-58706c6f7661';
+
+const ACK_TIMEOUT = 5000;
+
+let device = null;
+let commandChar = null;
+let ackResolve = null;
+
+const statusEl  = document.getElementById('status');
+const actionsEl = document.getElementById('actions');
+const btnConnect = document.getElementById('btnConnect');
+
+function setStatus(msg, type = '') {
+  const spinner = type === 'busy' ? '<span class="spinner"></span>' : '';
+  statusEl.className = 'status' + (type === 'success' ? ' success' : type === 'error' ? ' error' : '');
+  statusEl.innerHTML = spinner + msg;
+}
+
+function showConnected() {
+  document.getElementById('btnConnect').disabled = true;
+  document.getElementById('btnEnable').disabled = false;
+  document.getElementById('btnDisable').disabled = false;
+  document.getElementById('btnDisconnect').disabled = false;
+}
+
+function showIdle() {
+  document.getElementById('btnConnect').disabled = false;
+  document.getElementById('btnEnable').disabled = true;
+  document.getElementById('btnDisable').disabled = true;
+  document.getElementById('btnDisconnect').disabled = true;
+}
+
+function setButtonsDisabled(disabled) {
+  actionsEl.querySelectorAll('button').forEach(b => b.disabled = disabled);
+}
+
+function onAck(event) {
+  if (ackResolve) {
+    const r = ackResolve;
+    ackResolve = null;
+    r();
+  }
+}
+
+function waitForAck(timeout = ACK_TIMEOUT) {
+  return new Promise((resolve, reject) => {
+    ackResolve = resolve;
+    setTimeout(() => {
+      if (ackResolve === resolve) {
+        ackResolve = null;
+        reject(new Error('ACK timeout'));
+      }
+    }, timeout);
+  });
+}
+
+async function writeCmd(bytes, needsAck = true, timeout = ACK_TIMEOUT) {
+  const data = new Uint8Array(bytes);
+  if (needsAck) {
+    const ackPromise = waitForAck(timeout);
+    await commandChar.writeValueWithResponse(data);
+    await ackPromise;
+  } else {
+    await commandChar.writeValueWithResponse(data);
+  }
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function handshake() {
+  const steps = [
+    [[0x0D, 0x05], true],
+    [[0x3C, 0x01], true],
+    [[0x0D, 0x28], true],
+    [[0x0A, 0x48, 0x4D, 0x43, 0x42], true],
+    // 0x3D/0x3E subscribe commands omitted — they trigger an NVM commit that
+    // resets display units on the bike
+  ];
+  for (let i = 0; i < steps.length; i++) {
+    const [bytes, needsAck] = steps[i];
+    setStatus(`Handshaking (${i + 1}/${steps.length})…`, 'busy');
+    await writeCmd(bytes, needsAck);
+    await delay(50);
+  }
+}
+
+async function connect() {
+  if (!navigator.bluetooth) {
+    setStatus('Web Bluetooth not supported by this browser', 'error');
+    return;
+  }
+
+  try {
+    setStatus('Requesting device…', 'busy');
+    setButtonsDisabled(true);
+
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SERVICE_UUID] }]
+    });
+
+    device.addEventListener('gattserverdisconnected', () => {
+      commandChar = null;
+      device = null;
+      setStatus('Disconnected');
+      showIdle();
+    });
+
+    setStatus('Connecting…', 'busy');
+    const server = await device.gatt.connect();
+
+    setStatus('Discovering service…', 'busy');
+    const service = await server.getPrimaryService(SERVICE_UUID);
+
+    setStatus('Discovering characteristics…', 'busy');
+    const cmdChar = await service.getCharacteristic(CHAR_COMMAND_UUID);
+
+    commandChar = cmdChar;
+    commandChar.addEventListener('characteristicvaluechanged', onAck);
+
+    setStatus('Subscribing to notifications…', 'busy');
+    await commandChar.startNotifications();
+
+    setStatus('Waiting for bike…', 'busy');
+    await delay(1000);
+    await handshake();
+
+    setStatus('Connected to ' + device.name, 'success');
+    showConnected();
+  } catch (err) {
+    if (err.name === 'NotFoundError') {
+      setStatus('No device selected');
+    } else {
+      setStatus('Connection failed: ' + err.message, 'error');
+    }
+    showIdle();
+  }
+}
+
+async function setThrottle(enable) {
+  try {
+    setButtonsDisabled(true);
+    setStatus((enable ? 'Enabling' : 'Disabling') + ' throttle…', 'busy');
+
+    await writeCmd([0x50, 0x01]);
+    await writeCmd([0x52, 0xB0, 0x01, 0x00, 0x00, 0x08, enable ? 0x01 : 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x55]);
+    await writeCmd([0x50, 0x00]);
+    await delay(200);
+    await writeCmd([0x3E, 0x33, 0x34, 0x35], false);
+
+    setStatus('Throttle ' + (enable ? 'enabled' : 'disabled'), 'success');
+  } catch (err) {
+    setStatus('Failed: ' + err.message, 'error');
+  } finally {
+    setButtonsDisabled(false);
+  }
+}
+
+function disconnect() {
+  if (device && device.gatt.connected) {
+    device.gatt.disconnect();
+  }
+}
+</script>
+</body>
+</html>
