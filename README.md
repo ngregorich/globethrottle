@@ -6,7 +6,7 @@ A browser-based tool that uses [Web Bluetooth](https://webbluetoothcg.github.io/
 
 ## Use It
 
-https://globethrottle.experimentarea.com
+https://globe.experimentarea.com
 
 ## Disclaimer
 
