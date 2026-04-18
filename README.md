@@ -14,4 +14,4 @@ This is an unofficial, community developed tool. No affiliation with Specialized
 
 ## License
 
-[MIT](LICENSE) — Copyright (c) 2026 Nick Gregorich
+[MIT](LICENSE) — Copyright © 2026 Nick Gregorich
