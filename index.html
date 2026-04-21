@@ -121,6 +121,14 @@ header h1 {
   gap: 0.75rem;
 }
 
+.btn-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .btn-row {
   display: flex;
   gap: 0.75rem;
@@ -308,16 +316,17 @@ details.instructions a {
   <div class="status" id="status">Ready to connect</div>
 
   <div class="actions" id="actions">
-    <button class="btn-primary" id="btnConnect" onclick="connect()">Connect to Globe Haul</button>
+    <button class="btn-primary" id="btnConnect" onclick="toggleConnection()">Connect to Globe Haul</button>
+    <label class="btn-label">Throttle</label>
     <div class="btn-row">
-      <button class="btn-success" id="btnEnable" onclick="setThrottle(true)" disabled>Enable Throttle</button>
-      <button class="btn-danger" id="btnDisable" onclick="setThrottle(false)" disabled>Disable Throttle</button>
+      <button class="btn-success" id="btnEnable" onclick="setThrottle(true)" disabled>Enable</button>
+      <button class="btn-danger" id="btnDisable" onclick="setThrottle(false)" disabled>Disable</button>
     </div>
+    <label class="btn-label">Units</label>
     <div class="btn-row">
       <button class="btn-outline" id="btnImperial" onclick="setUnits(true)" disabled>Imperial</button>
       <button class="btn-outline" id="btnMetric" onclick="setUnits(false)" disabled>Metric</button>
     </div>
-    <button class="btn-outline" id="btnDisconnect" onclick="disconnect()" disabled>Disconnect</button>
   </div>
 </div>
 
@@ -344,21 +353,31 @@ function setStatus(msg, type = '') {
 }
 
 function showConnected() {
-  document.getElementById('btnConnect').disabled = true;
+  const btn = document.getElementById('btnConnect');
+  btn.textContent = 'Disconnect';
+  btn.className = 'btn-outline';
   document.getElementById('btnEnable').disabled = false;
   document.getElementById('btnDisable').disabled = false;
   document.getElementById('btnImperial').disabled = false;
   document.getElementById('btnMetric').disabled = false;
-  document.getElementById('btnDisconnect').disabled = false;
 }
 
 function showIdle() {
-  document.getElementById('btnConnect').disabled = false;
+  const btn = document.getElementById('btnConnect');
+  btn.textContent = 'Connect to Globe Haul';
+  btn.className = 'btn-primary';
   document.getElementById('btnEnable').disabled = true;
   document.getElementById('btnDisable').disabled = true;
   document.getElementById('btnImperial').disabled = true;
   document.getElementById('btnMetric').disabled = true;
-  document.getElementById('btnDisconnect').disabled = true;
+}
+
+function toggleConnection() {
+  if (device && device.gatt.connected) {
+    disconnect();
+  } else {
+    connect();
+  }
 }
 
 function setButtonsDisabled(disabled) {
